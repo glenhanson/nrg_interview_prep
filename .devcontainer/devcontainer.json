@@ -14,8 +14,12 @@
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ms-toolsai.jupyter-keymap",
-                "mechatroner.rainbow-csv"
-            ]
+                "mechatroner.rainbow-csv",
+                "ms-python.black-formatter"
+            ],
+            "settings": {
+                "editor.formatOnSave": true,
+                "python.formatting.provider": "black"
         }
     },
     "mounts": [
