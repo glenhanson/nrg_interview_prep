@@ -1,0 +1,22 @@
+// Simple devcontainer set up for a python 3.13 project
+{
+    "name": "Python 3.13 Dev Container",
+    "image": "python:3.13",
+    "features": {
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.13"
+        }
+    },
+    "postCreateCommand": "pip install -e .[dev]",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance"
+            ]
+        }
+    },
+    "mounts": [
+        "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind,consistency=cached"
+    ]
+}

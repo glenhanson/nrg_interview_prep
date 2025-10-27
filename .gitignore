@@ -1,0 +1,7 @@
+*.egg-info/
+nrg_interview_prep/__pycache__/
+__pycache__/
+.venv/
+env/
+venv/
+.DS_Store
