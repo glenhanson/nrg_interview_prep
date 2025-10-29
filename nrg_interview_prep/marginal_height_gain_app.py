@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import joblib
+import pandas as pd
 from nrg_interview_prep.utils import marginal_effects
 # ---------------------------
 # Load trained OLS model
@@ -30,10 +31,10 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     age = st.number_input("Age", min_value=0.0,
-                          max_value=100.0, value=30.0, step=1.0)
+                          max_value=100.0, value=25.0, step=1.0)
 with col2:
     weight = st.number_input("Weight", min_value=20.0,
-                             max_value=200.0, value=70.0, step=1.0)
+                             max_value=70.0, value=40.0, step=1.0)
 with col3:
     sex = st.selectbox("Sex", ["Female", "Male"])
 male = 1 if sex == "Male" else 0
@@ -67,15 +68,3 @@ st.subheader("Predicted Results")
 st.metric("Predicted Height", f"{pred_height:.2f} units")
 st.metric("Marginal Height Gain (for +10 weight)",
           f"{height_gain_10:.2f} units")
-
-# Optional chart: show how marginal effect changes with weight
-st.subheader("Marginal Effect of Weight on Height Across Weights")
-weights = np.linspace(20, 200, 100)
-effects = [
-    marginal_effects(w, age, male, b)[0] * 10  # per 10-unit weight gain
-    for w in weights
-]
-
-st.line_chart({"Height Gain (+10 weight)": effects}, x=weights)
-
-st.caption("Model coefficients and structure from your trained OLS model.")
