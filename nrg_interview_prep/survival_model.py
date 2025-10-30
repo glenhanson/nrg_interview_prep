@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from lifelines import CoxPHFitter
+from lifelines.utils import concordance_index
 import json
 import pickle
 
@@ -19,7 +20,6 @@ class SurvivalModel:
                 raise FileNotFoundError(
                     f"The provided data path {self.data_path} does not exist.")
         self.absolute_test_set_size = absolute_test_set_size
-        self.training_data, self.test_data = self._prepDataset()
 
     def _prepDataset(self):
         data_df = pd.read_csv(self.data_path)
@@ -29,7 +29,6 @@ class SurvivalModel:
             test_size = int(0.2 * len(data_df))
         else:
             test_size = self.absolute_test_set_size
-        test_size = 10  # small test you want
         rng = np.random.default_rng(seed=17)
 
         censored_idx = data_df.index[data_df['E'] == 0].tolist()
@@ -54,8 +53,14 @@ class SurvivalModel:
         # Save model summary as json
         model_summary = {
             "summary": cph.summary.to_dict(),
-            "concordance_index": cph.concordance_index_
         }
+
+        test_risk = cph.predict_partial_hazard(test_data)
+        concordance = concordance_index(
+            test_data['T'], -test_risk, test_data['E'])
+        print(f"Concordance index on test set: {concordance:.3f}")
+        model_summary["test_set_concordance_index"] = concordance
+
         with open(Config.survival_model_stats_path, 'w') as f:
             json.dump(model_summary, f)
         self.model = cph
@@ -79,12 +84,28 @@ class SurvivalModel:
             f"\nModel trained and saved to {Config.trained_survival_model_path}")
 
     def predict(self, X):
-        # Placeholder for predicting survival probabilities
-        if not self.model:
-            raise ValueError("Model is not trained yet.")
-        return self.model.predict_survival_function(X)
+        # See if saved model exists
+        if not Path(Config.trained_survival_model_path).exists():
+            raise FileNotFoundError(
+                f"Trained model not found at {Config.trained_survival_model_path}. Please train the model first.")
+        with open(Config.trained_survival_model_path, 'rb') as f:
+            cph = pickle.load(f)
+        # Ensure X is a DataFrame
+        if not isinstance(X, pd.DataFrame):
+            raise ValueError("Input X must be a pandas DataFrame.")
+        # Ensure X has the same columns as the training data
+        training_columns = cph.params_.index.tolist()
+        if not all(col in X.columns for col in training_columns):
+            raise ValueError(
+                f"Input DataFrame must contain the following columns: {training_columns}.")
+        # Predict the hazard ratios
+        hazard_ratios = cph.predict_partial_hazard(X)
+        return hazard_ratios
 
 
-def train_model():
-    survival_model = SurvivalModel()
+def train_model(training_data_path: Optional[str] = None, absolute_test_set_size: Optional[int] = 10):
+    survival_model = SurvivalModel(
+        data_path=training_data_path,
+        absolute_test_set_size=absolute_test_set_size
+    )
     survival_model.train()
